@@ -1,5 +1,6 @@
 package cn.xpbootcamp.legacy_code;
 
+import cn.xpbootcamp.legacy_code.entity.Order;
 import cn.xpbootcamp.legacy_code.enums.STATUS;
 import cn.xpbootcamp.legacy_code.service.WalletService;
 import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
@@ -12,26 +13,18 @@ import javax.transaction.InvalidTransactionException;
 
 public class WalletTransaction {
     private String id;
-    private Long buyerId;
-    private Long sellerId;
-    private Long productId;
-    private String orderId;
+    private Order order;
     private Long createdTimestamp;
-    private Double amount;
     private STATUS status;
     private String walletTransactionId;
     private WalletService walletService;
 
 
-    public WalletTransaction(String preAssignedId, Long buyerId, Long sellerId, Long productId, String orderId, Double amount) {
+    public WalletTransaction(String preAssignedId, Order order) {
         initId(preAssignedId);
-        this.buyerId = buyerId;
-        this.sellerId = sellerId;
-        this.productId = productId;
-        this.orderId = orderId;
+        this.order = order;
         this.status = STATUS.TO_BE_EXECUTED;
         this.createdTimestamp = System.currentTimeMillis();
-        this.amount = amount;
     }
 
     public void setWalletService(WalletServiceImpl walletService) {
@@ -43,7 +36,7 @@ public class WalletTransaction {
     }
 
     public boolean execute() throws InvalidTransactionException {
-        if (buyerId == null || (sellerId == null || amount < 0.0)) {
+        if (order.isCheckPass()) {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
         if (status == STATUS.EXECUTED) return true;
@@ -59,7 +52,7 @@ public class WalletTransaction {
                 this.status = STATUS.EXPIRED;
                 return false;
             }
-            String walletTransactionId = walletService.moveMoney(id, buyerId, sellerId, amount);
+            String walletTransactionId = walletService.moveMoney(id, order.getBuyerId(), order.getSellerId(), order.getAmount());
             if (walletTransactionId != null) {
                 this.walletTransactionId = walletTransactionId;
                 this.status = STATUS.EXECUTED;

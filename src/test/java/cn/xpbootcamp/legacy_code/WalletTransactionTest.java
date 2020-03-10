@@ -1,5 +1,6 @@
 package cn.xpbootcamp.legacy_code;
 
+import cn.xpbootcamp.legacy_code.entity.Order;
 import cn.xpbootcamp.legacy_code.entity.User;
 import cn.xpbootcamp.legacy_code.repository.UserRepositoryImpl;
 import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
@@ -28,8 +29,8 @@ class WalletTransactionTest {
         Long productId = 3L;
         String orderId = "OID-123";
         double amount = 15d;
-        User buyer = new User(buyerId, 100d);
-        User seller = new User(sellerId, 100d);
+        User buyer = buildUser(buyerId, 100d);
+        User seller = buildUser(sellerId, 100d);
 
         RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
         Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
@@ -41,7 +42,7 @@ class WalletTransactionTest {
         PowerMockito.when(mockUserRepository.find(sellerId)).thenReturn(seller);
 
 
-        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, buyerId, sellerId, productId, orderId, amount);
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
         walletTransaction.setWalletService(new WalletServiceImpl(mockUserRepository));
         boolean result = walletTransaction.execute();
 
@@ -59,8 +60,8 @@ class WalletTransactionTest {
         Long productId = 3L;
         String orderId = "OID-123";
         double amount = 15d;
-        User buyer = new User(buyerId, 100d);
-        User seller = new User(sellerId, 100d);
+        User buyer = buildUser(buyerId, 100d);
+        User seller = buildUser(sellerId, 100d);
 
         RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
         Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
@@ -68,10 +69,10 @@ class WalletTransactionTest {
 
 
         UserRepositoryImpl mockUserRepository = PowerMockito.mock(UserRepositoryImpl.class);
-        PowerMockito.when(mockUserRepository.find(anyLong())).thenReturn(new User(buyerId, 5d));
+        PowerMockito.when(mockUserRepository.find(anyLong())).thenReturn(buyer);
 
 
-        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, buyerId, sellerId, productId, orderId, amount);
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
         walletTransaction.setWalletService(new WalletServiceImpl(mockUserRepository));
         boolean result = walletTransaction.execute();
 
@@ -88,8 +89,8 @@ class WalletTransactionTest {
         Long productId = 3L;
         String orderId = "OID-123";
         double amount = 15d;
-        User buyer = new User(buyerId, 100d);
-        User seller = new User(sellerId, 100d);
+        User buyer = buildUser(buyerId, 100d);
+        User seller = buildUser(sellerId, 100d);
 
         RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
         Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
@@ -100,7 +101,7 @@ class WalletTransactionTest {
         PowerMockito.when(mockUserRepository.find(buyerId)).thenReturn(buyer);
         PowerMockito.when(mockUserRepository.find(sellerId)).thenReturn(seller);
 
-        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, buyerId, sellerId, productId, orderId, amount);
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
         walletTransaction.setWalletService(new WalletServiceImpl(mockUserRepository));
 
         walletTransaction.setCreatedTimestamp(System.currentTimeMillis() - 2729000000L);
@@ -120,8 +121,8 @@ class WalletTransactionTest {
         Long productId = 3L;
         String orderId = "OID-123";
         double amount = 15d;
-        User buyer = new User(buyerId, 10d);
-        User seller = new User(sellerId, 100d);
+        User buyer = buildUser(buyerId, 10d);
+        User seller = buildUser(sellerId, 100d);
 
         RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
         Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
@@ -129,16 +130,20 @@ class WalletTransactionTest {
 
 
         UserRepositoryImpl mockUserRepository = PowerMockito.mock(UserRepositoryImpl.class);
-        PowerMockito.when(mockUserRepository.find(anyLong())).thenReturn(new User(buyerId, 5d));
+        PowerMockito.when(mockUserRepository.find(anyLong())).thenReturn(buyer);
 
 
-        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, buyerId, sellerId, productId, orderId, amount);
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
         walletTransaction.setWalletService(new WalletServiceImpl(mockUserRepository));
         boolean result = walletTransaction.execute();
 
         assertFalse(result);
         assertEquals(10, buyer.getBalance());
         assertEquals(100, seller.getBalance());
+    }
+
+    private User buildUser(long id, double balance) {
+        return User.builder().id(id).balance(balance).build();
     }
 
 }
