@@ -19,6 +19,6 @@ public class Order {
     }
 
     public boolean isCheckPass() {
-        return ObjectUtils.isEmpty(getBuyerId()) || ObjectUtils.isEmpty(getSellerId()) || isAmountInValid();
+        return ObjectUtils.isEmpty(this.buyerId) || ObjectUtils.isEmpty(this.sellerId) || isAmountInValid();
     }
 }

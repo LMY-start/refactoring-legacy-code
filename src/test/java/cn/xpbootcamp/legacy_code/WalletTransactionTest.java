@@ -5,7 +5,9 @@ import cn.xpbootcamp.legacy_code.entity.User;
 import cn.xpbootcamp.legacy_code.repository.UserRepositoryImpl;
 import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
 import cn.xpbootcamp.legacy_code.utils.RedisDistributedLock;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.reflect.Whitebox;
 
@@ -142,7 +144,61 @@ class WalletTransactionTest {
         assertEquals(100, seller.getBalance());
     }
 
-    private User buildUser(long id, double balance) {
+    @Test
+    void should_get_exception_when_the_buyer_id_is_null() throws InvalidTransactionException {
+        String preAssignedId = "";
+        Long buyerId = null;
+        Long sellerId = 2L;
+        Long productId = 3L;
+        String orderId = "OID-123";
+        double amount = 15d;
+
+        RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
+        Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
+        PowerMockito.when(mockRedisDistributedLock.lock(anyString())).thenReturn(false);
+
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
+
+        Assertions.assertThrows(InvalidTransactionException.class, (Executable) walletTransaction::execute);
+    }
+
+    @Test
+    void should_get_exception_when_the_seller_id_is_null() throws InvalidTransactionException {
+        String preAssignedId = "";
+        Long buyerId = 1L;
+        Long sellerId = null;
+        Long productId = 3L;
+        String orderId = "OID-123";
+        double amount = 15d;
+
+        RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
+        Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
+        PowerMockito.when(mockRedisDistributedLock.lock(anyString())).thenReturn(false);
+
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
+
+        Assertions.assertThrows(InvalidTransactionException.class, (Executable) walletTransaction::execute);
+    }
+
+    @Test
+    void should_get_exception_when_the_amount_less_0() throws InvalidTransactionException {
+        String preAssignedId = "";
+        Long buyerId = 1L;
+        Long sellerId = 2L;
+        Long productId = 3L;
+        String orderId = "OID-123";
+        double amount = -1;
+
+        RedisDistributedLock mockRedisDistributedLock = PowerMockito.mock(RedisDistributedLock.class);
+        Whitebox.setInternalState(RedisDistributedLock.class, "INSTANCE", mockRedisDistributedLock);
+        PowerMockito.when(mockRedisDistributedLock.lock(anyString())).thenReturn(false);
+
+        WalletTransaction walletTransaction = new WalletTransaction(preAssignedId, new Order(buyerId, sellerId, productId, orderId, amount));
+
+        Assertions.assertThrows(InvalidTransactionException.class, (Executable) walletTransaction::execute);
+    }
+
+    private User buildUser(Long id, double balance) {
         return User.builder().id(id).balance(balance).build();
     }
 

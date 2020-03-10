@@ -43,6 +43,10 @@ public class WalletTransaction {
             return true;
         }
 
+        return doTransaction();
+    }
+
+    private boolean doTransaction() {
         boolean isLocked = false;
         try {
             isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
