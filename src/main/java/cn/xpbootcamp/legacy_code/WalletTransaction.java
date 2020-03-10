@@ -39,7 +39,10 @@ public class WalletTransaction {
         if (order.isCheckPass()) {
             throw new InvalidTransactionException("This is an invalid transaction");
         }
-        if (status == STATUS.EXECUTED) return true;
+        if (isExecuted()) {
+            return true;
+        }
+
         boolean isLocked = false;
         try {
             isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
@@ -47,20 +50,15 @@ public class WalletTransaction {
             if (!isLocked) {
                 return false;
             }
-            if (status == STATUS.EXECUTED) return true;
+            if (isExecuted()) {
+                return true;
+            }
             if (isExpired()) {
                 this.status = STATUS.EXPIRED;
                 return false;
             }
             String walletTransactionId = walletService.moveMoney(id, order.getBuyerId(), order.getSellerId(), order.getAmount());
-            if (walletTransactionId != null) {
-                this.walletTransactionId = walletTransactionId;
-                this.status = STATUS.EXECUTED;
-                return true;
-            } else {
-                this.status = STATUS.FAILED;
-                return false;
-            }
+            return updateAfterMoveMoney(walletTransactionId);
         } finally {
             if (isLocked) {
                 RedisDistributedLock.getSingletonInstance().unlock(id);
@@ -68,8 +66,24 @@ public class WalletTransaction {
         }
     }
 
+    private boolean updateAfterMoveMoney(String walletTransactionId) {
+        if (StringUtils.isEmpty(walletTransactionId)) {
+            this.status = STATUS.FAILED;
+            return false;
+        } else {
+            this.walletTransactionId = walletTransactionId;
+            this.status = STATUS.EXECUTED;
+            return true;
+        }
+    }
+
+
+    private boolean isExecuted() {
+        return STATUS.EXECUTED.equals(status);
+    }
+
     private void initId(String preAssignedId) {
-        this.id = StringUtils.isEmpty(preAssignedId) ? preAssignedId : IdGenerator.generateTransactionId();
+        this.id = StringUtils.isEmpty(preAssignedId) ? IdGenerator.generateTransactionId() : preAssignedId;
         String START_T = "t_";
         this.id = this.id.startsWith(START_T) ? this.id : START_T + preAssignedId;
     }
