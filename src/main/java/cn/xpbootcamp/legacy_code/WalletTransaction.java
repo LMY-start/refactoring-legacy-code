@@ -6,6 +6,8 @@ import cn.xpbootcamp.legacy_code.service.WalletServiceImpl;
 import cn.xpbootcamp.legacy_code.utils.IdGenerator;
 import cn.xpbootcamp.legacy_code.utils.RedisDistributedLock;
 
+import org.apache.commons.lang3.StringUtils;
+
 import javax.transaction.InvalidTransactionException;
 
 public class WalletTransaction {
@@ -22,14 +24,7 @@ public class WalletTransaction {
 
 
     public WalletTransaction(String preAssignedId, Long buyerId, Long sellerId, Long productId, String orderId, Double amount) {
-        if (preAssignedId != null && !preAssignedId.isEmpty()) {
-            this.id = preAssignedId;
-        } else {
-            this.id = IdGenerator.generateTransactionId();
-        }
-        if (!this.id.startsWith("t_")) {
-            this.id = "t_" + preAssignedId;
-        }
+        initId(preAssignedId);
         this.buyerId = buyerId;
         this.sellerId = sellerId;
         this.productId = productId;
@@ -39,7 +34,7 @@ public class WalletTransaction {
         this.amount = amount;
     }
 
-    public void setWalletService(WalletService walletService) {
+    public void setWalletService(WalletServiceImpl walletService) {
         this.walletService = walletService;
     }
 
@@ -56,12 +51,10 @@ public class WalletTransaction {
         try {
             isLocked = RedisDistributedLock.getSingletonInstance().lock(id);
 
-            // 锁定未成功，返回false
             if (!isLocked) {
                 return false;
             }
-            if (status == STATUS.EXECUTED) return true; // double check
-            // 交易超过20天
+            if (status == STATUS.EXECUTED) return true;
             if (isExpired()) {
                 this.status = STATUS.EXPIRED;
                 return false;
@@ -82,9 +75,15 @@ public class WalletTransaction {
         }
     }
 
+    private void initId(String preAssignedId) {
+        this.id = StringUtils.isEmpty(preAssignedId) ? preAssignedId : IdGenerator.generateTransactionId();
+        String START_T = "t_";
+        this.id = this.id.startsWith(START_T) ? this.id : START_T + preAssignedId;
+    }
+
     private boolean isExpired() {
-        long executionInvokedTimestamp = System.currentTimeMillis();
-        return executionInvokedTimestamp - createdTimestamp > 1728000000;
+        int expiredTimeInMs = 1728000000;
+        return System.currentTimeMillis() - createdTimestamp > expiredTimeInMs;
     }
 
 }
